@@ -175,8 +175,17 @@ static void *coalesce(void *bp) {
 }
 
 static void *find_fit(size_t asize) {
-    return 0;
+    void *bp;
+
+    /* 빈 블록 리스트를 순회하여 적절한 크기의 블록을 찾음 */
+    for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp)) {
+        if (!GET_ALLOC(HDRP(bp)) && (asize <= GET_SIZE(HDRP(bp)))) {
+            return bp;
+        }
+    }
+    return NULL; /* 적절한 크기의 블록을 찾지 못한 경우 */
 }
+
 
 static void place(void *bp, size_t asize) {
 
