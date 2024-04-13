@@ -64,10 +64,26 @@ team_t team = {
 #define NEXT_BLKP(bp)   (((char *)(bp) + GET_SIZE((char *)(bp) - WSIZE)))
 #define PREV_BLKP(bp)   (((char *)(bp) - GET_SIZE((char *)(bp) - DSIZE)))
 
+static char *heap_listp;
+
+static void *extend_heap(size_t words);
+
 /* 
  * mm_init - initialize the malloc package.
  */
 int mm_init(void) {
+    /* 초기 빈 힙 생성 */
+    if ((heap_listp = mem_sbrk(4 * WSIZE)) == (void *) -1)
+        return -1;
+    PUT(heap_listp, 0);                        /* 정렬을 위한 여백 삽입 */
+    PUT(heap_listp + (1 * WSIZE), PACK(DSIZE, 1)); /* 프롤로그 헤더 설정 */
+    PUT(heap_listp + (2 * WSIZE), PACK(DSIZE, 1)); /* 프롤로그 푸터 설정 */
+    PUT(heap_listp + (3 * WSIZE), PACK(0, 1));     /* 에필로그 헤더 설정 */
+    heap_listp += (2 * WSIZE);
+
+    /* CHUNKSIZE 바이트의 빈 힙을 추가로 확장 */
+    if (extend_heap(CHUNKSIZE / WSIZE) == NULL)
+        return -1;
     return 0;
 }
 
@@ -111,16 +127,6 @@ void *mm_realloc(void *ptr, size_t size) {
     return newptr;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+static void *extend_heap(size_t words) {
+    return 0;
+}
