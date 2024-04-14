@@ -74,7 +74,10 @@ static void *find_fit(size_t asize);
 
 static void place(void *bp, size_t asize);
 
-/* 
+/* 다음으로 검색할 위치를 저장할 전역 변수 */
+static char *next_fit_ptr = NULL;
+
+/*
  * mm_init - initialize the malloc package.
  */
 int mm_init(void) {
@@ -86,6 +89,8 @@ int mm_init(void) {
     PUT(heap_listp + (2 * WSIZE), PACK(DSIZE, 1)); /* 프롤로그 푸터 설정 */
     PUT(heap_listp + (3 * WSIZE), PACK(0, 1));     /* 에필로그 헤더 설정 */
     heap_listp += (2 * WSIZE);
+    /* 다음으로 검색할 위치 초기화 */
+    next_fit_ptr = heap_listp;
 
     /* CHUNKSIZE 바이트의 빈 힙을 추가로 확장 */
     if (extend_heap(CHUNKSIZE / WSIZE) == NULL)
@@ -201,33 +206,50 @@ static void *coalesce(void *bp) {
         PUT(FTRP(NEXT_BLKP(bp)), PACK(size, 0));
         bp = PREV_BLKP(bp);
     }
+    /* 다음 검색 위치 업데이트 */
+    next_fit_ptr = bp;
     return bp;
 }
 
-
 static void *find_fit(size_t asize) {
-    void *bp;
+    char *bp;
 
-    /* 빈 블록 리스트를 순회하여 적절한 크기의 블록을 찾음 */
-    for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp)) {
+    /* 다음으로 검색할 위치부터 시작 */
+    if (next_fit_ptr == NULL)
+        next_fit_ptr = heap_listp;
+
+    /* 저장된 위치부터 시작하여 빈 블록을 검색 */
+    for (bp = next_fit_ptr; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp)) {
         if (!GET_ALLOC(HDRP(bp)) && (asize <= GET_SIZE(HDRP(bp)))) {
+            /* 적합한 블록을 찾으면, 다음 검색 위치 업데이트 */
+            next_fit_ptr = bp;
             return bp;
         }
     }
-    return NULL; /* 적절한 크기의 블록을 찾지 못한 경우 */
-}
 
+    /* 저장된 위치부터 검색하여 빈 블록을 찾지 못하면, 힙의 시작부터 시작하여 검색 */
+    for (bp = heap_listp; bp < next_fit_ptr; bp = NEXT_BLKP(bp)) {
+        if (!GET_ALLOC(HDRP(bp)) && (asize <= GET_SIZE(HDRP(bp)))) {
+            /* 적합한 블록을 찾으면, 다음 검색 위치 업데이트 */
+            next_fit_ptr = bp;
+            return bp;
+        }
+    }
+
+    /* 빈 블록을 찾지 못한 경우 */
+    return NULL;
+}
 
 static void place(void *bp, size_t asize) {
     size_t csize = GET_SIZE(HDRP(bp));
 
-    if ((csize - asize) >= (2*DSIZE)) {
+    if ((csize - asize) >= (2 * DSIZE)) {
         /* 남은 부분이 충분히 크면 블록을 분할 */
         PUT(HDRP(bp), PACK(asize, 1));
         PUT(FTRP(bp), PACK(asize, 1));
         bp = NEXT_BLKP(bp);
-        PUT(HDRP(bp), PACK(csize-asize, 0));
-        PUT(FTRP(bp), PACK(csize-asize, 0));
+        PUT(HDRP(bp), PACK(csize - asize, 0));
+        PUT(FTRP(bp), PACK(csize - asize, 0));
     } else {
         /* 남은 부분이 충분히 크지 않으면 블록을 모두 할당 */
         PUT(HDRP(bp), PACK(csize, 1));
