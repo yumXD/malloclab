@@ -73,6 +73,8 @@ static char *free_listp = NULL;
 
 static void *extend_heap(size_t words);
 
+static void *coalesce(void *bp);
+
 /* 
  * mm_init - initialize the malloc package.
  */
@@ -140,5 +142,24 @@ void *mm_realloc(void *ptr, size_t size) {
 }
 
 static void *extend_heap(size_t words) {
+    char *bp;
+    size_t size;
+
+    /* 요청된 워드 수를 워드 단위로 정렬 */
+    size = (words % 2) ? (words + 1) * WSIZE : words * WSIZE;
+    if ((long) (bp = mem_sbrk(size)) == -1)
+        return NULL;
+
+    /* 새로운 블록의 헤더와 푸터 설정 */
+    PUT(HDRP(bp), PACK(size, 0));         /* 블록 헤더 설정 */
+    PUT(FTRP(bp), PACK(size, 0));         /* 블록 푸터 설정 */
+    PUT(HDRP(NEXT_BLKP(bp)), PACK(0, 1)); /* 새로운 에필로그 헤더 설정 */
+
+    /* 만약 이전 블록이 비어있으면, 새로운 블록과 병합 */
+    return coalesce(bp);
+}
+
+
+static void *coalesce(void *bp) {
     return 0;
 }
