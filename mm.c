@@ -46,6 +46,7 @@ team_t team = {
 
 #define WSIZE       4
 #define DSIZE       8
+#define SIZE_16BYTE 16
 #define CHUNKSIZE   (1 << 12)
 
 #define MAX(x, y)   ((x) > (y) ? (x) : (y))
@@ -67,10 +68,34 @@ team_t team = {
 #define GET_FREE_SUCC(bp)  (*(void**)(bp + WSIZE))
 #define GET_FREE_PRED(bp)  (*(void**)(bp))
 
+static char *heap_listp = NULL;
+static char *free_listp = NULL;
+
+static void *extend_heap(size_t words);
+
 /* 
  * mm_init - initialize the malloc package.
  */
 int mm_init(void) {
+    // 초기 힙 공간을 할당합니다.
+    if ((heap_listp = mem_sbrk(6 * WSIZE)) == (void *) -1)
+        return -1;
+
+    // 프롤로그 블록 설정
+    PUT(heap_listp, 0);                                      // 패딩
+    PUT(heap_listp + (1 * WSIZE), PACK(SIZE_16BYTE, 1));           // 프롤로그 헤더
+    PUT(heap_listp + (2 * WSIZE), NULL);                     // 프리 리스트의 이전 블록 포인터
+    PUT(heap_listp + (3 * WSIZE), NULL);                     // 프리 리스트의 다음 블록 포인터
+    PUT(heap_listp + (4 * WSIZE), PACK(SIZE_16BYTE, 1));           // 프롤로그 푸터
+    PUT(heap_listp + (5 * WSIZE), PACK(0, 1));               // 에필로그 헤더
+
+    // 프리 리스트 포인터 설정
+    free_listp = heap_listp + (2 * WSIZE);
+
+    // 추가적인 힙 공간을 할당합니다.
+    if (extend_heap(CHUNKSIZE / WSIZE) == NULL) {
+        return -1;
+    }
     return 0;
 }
 
@@ -114,16 +139,6 @@ void *mm_realloc(void *ptr, size_t size) {
     return newptr;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+static void *extend_heap(size_t words) {
+    return 0;
+}
