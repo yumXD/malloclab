@@ -44,6 +44,10 @@ team_t team = {
 
 #define SIZE_T_SIZE (ALIGN(sizeof(size_t)))
 
+#define WSIZE       4
+#define DSIZE       8
+#define CHUNKSIZE   (1 << 12)
+
 /* 
  * mm_init - initialize the malloc package.
  */
