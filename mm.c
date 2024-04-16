@@ -85,6 +85,7 @@ static void putFreeBlock(void *bp);
 /*
  * mm_init - initialize the malloc package.
  */
+/* 메모리 할당자를 초기화 */
 int mm_init(void) {
     // 초기 힙 공간을 할당합니다.
     if ((heap_listp = mem_sbrk(6 * WSIZE)) == (void *) -1)
@@ -167,6 +168,7 @@ void *mm_realloc(void *ptr, size_t size) {
     return newptr;
 }
 
+/* 힙을 확장하여 새로운 가용 블록을 생성 */
 static void *extend_heap(size_t words) {
     char *bp;
     size_t size;
@@ -190,6 +192,7 @@ static void *coalesce(void *bp) {
     return 0;
 }
 
+/* 요청된 크기에 맞는 가용 블록을 찾기 */
 static void *find_fit(size_t asize) {
     void *bp;
 
@@ -204,6 +207,7 @@ static void *find_fit(size_t asize) {
     return NULL;
 }
 
+/* 요청된 크기에 맞는 가용 블록을 할당하고, 필요한 경우 분할 */
 static void place(void *bp, size_t asize) {
     size_t csize = GET_SIZE(HDRP(bp));
 
@@ -224,6 +228,7 @@ static void place(void *bp, size_t asize) {
     }
 }
 
+/* 주어진 블록을 가용 블록 리스트에서 제거 */
 static void removeBlock(void *bp) {
     /* 주어진 블록이 리스트의 맨 앞에 있는 경우 */
     if (bp == free_listp) {
@@ -237,6 +242,7 @@ static void removeBlock(void *bp) {
     }
 }
 
+/* 주어진 블록을 가용 블록 리스트의 맨 앞에 추가 */
 static void putFreeBlock(void *bp) {
     FREE_SUCC(bp) = free_listp; /* 새로운 가용 블록의 다음 포인터를 기존의 리스트의 첫 번째 블록을 가리킴 */
     FREE_PRED(bp) = NULL; /* 새로운 가용 블록의 이전 포인터를 NULL로 설정 */
