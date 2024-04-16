@@ -187,7 +187,17 @@ static void *coalesce(void *bp) {
 }
 
 static void *find_fit(size_t asize) {
-    return 0;
+    void *bp;
+
+    /* 가용 블록 리스트를 순회하며 요청된 크기보다 크거나 같은 가용 블록을 찾습니다. */
+    for (bp = free_listp; GET_ALLOC(HDRP(bp)) == 0; bp = GET_FREE_SUCC(bp)) {
+        if (asize <= GET_SIZE(HDRP(bp))) {
+            return bp; /* 찾은 가용 블록의 포인터를 반환합니다. */
+        }
+    }
+
+    /* 적합한 가용 블록을 찾지 못한 경우 NULL 반환 */
+    return NULL;
 }
 
 static void place(void *bp, size_t asize) {
