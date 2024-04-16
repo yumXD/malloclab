@@ -78,7 +78,11 @@ static void *find_fit(size_t asize);
 
 static void place(void *bp, size_t asize);
 
-/* 
+static void removeBlock(void *bp);
+
+static void putFreeBlock(void *bp);
+
+/*
  * mm_init - initialize the malloc package.
  */
 int mm_init(void) {
@@ -201,5 +205,29 @@ static void *find_fit(size_t asize) {
 }
 
 static void place(void *bp, size_t asize) {
+    size_t csize = GET_SIZE(HDRP(bp));
+
+    removeBlock(bp); // 기존 가용 블록을 리스트에서 제거합니다.
+
+    if ((csize - asize) >= (2 * DSIZE)) {
+        // 요청된 크기보다 큰 가용 블록을 분할하여 할당
+        PUT(HDRP(bp), PACK(asize, 1));             // 할당된 블록 헤더 설정
+        PUT(FTRP(bp), PACK(asize, 1));             // 할당된 블록 푸터 설정
+        bp = NEXT_BLKP(bp);                        // 다음 블록으로 이동
+        PUT(HDRP(bp), PACK((csize - asize), 0));   // 나머지 가용 블록 헤더 설정
+        PUT(FTRP(bp), PACK((csize - asize), 0));   // 나먼지 가용 블록 푸터 설정
+        putFreeBlock(bp);                          // 나머지 가용 블록을 리스트의 맨 앞에 추가
+    } else {
+        // 요청된 크기와 같거나 작은 가용 블록을 할당
+        PUT(HDRP(bp), PACK(csize, 1));             // 할당된 블록 헤더 설정
+        PUT(FTRP(bp), PACK(csize, 1));             // 할당된 블록 푸터 설정
+    }
+}
+
+static void removeBlock(void *bp) {
+
+}
+
+static void putFreeBlock(void *bp) {
 
 }
