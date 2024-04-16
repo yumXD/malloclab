@@ -46,7 +46,6 @@ team_t team = {
 
 #define WSIZE       4
 #define DSIZE       8
-#define SIZE_16BYTE 16
 #define CHUNKSIZE   (1 << 12)
 
 #define MAX(x, y)   ((x) > (y) ? (x) : (y))
@@ -54,7 +53,7 @@ team_t team = {
 #define PACK(size, alloc)   ((size) | (alloc))
 
 #define GET(p)  (*(unsigned int *)(p))
-#define PUT(p, val)  (*(unsigned int *)(p) = (val))
+#define PUT(p, val)  (*(unsigned int *)(p) = (unsigned int)(val))
 
 #define GET_SIZE(p)    (GET(p) & ~0x7)
 #define GET_ALLOC(p)   (GET(p) & 0x1)
@@ -89,10 +88,10 @@ int mm_init(void) {
 
     // 프롤로그 블록 설정
     PUT(heap_listp, 0);                                      // 패딩
-    PUT(heap_listp + (1 * WSIZE), PACK(SIZE_16BYTE, 1));           // 프롤로그 헤더
+    PUT(heap_listp + (1 * WSIZE), PACK(2 * DSIZE, 1));       // 프롤로그 헤더
     PUT(heap_listp + (2 * WSIZE), NULL);                     // 프리 리스트의 이전 블록 포인터
     PUT(heap_listp + (3 * WSIZE), NULL);                     // 프리 리스트의 다음 블록 포인터
-    PUT(heap_listp + (4 * WSIZE), PACK(SIZE_16BYTE, 1));           // 프롤로그 푸터
+    PUT(heap_listp + (4 * WSIZE), PACK(2 * DSIZE, 1));       // 프롤로그 푸터
     PUT(heap_listp + (5 * WSIZE), PACK(0, 1));               // 에필로그 헤더
 
     // 프리 리스트 포인터 설정
@@ -192,5 +191,5 @@ static void *find_fit(size_t asize) {
 }
 
 static void place(void *bp, size_t asize) {
-    
+
 }
