@@ -147,7 +147,16 @@ void *mm_malloc(size_t size) {
  * mm_free - Freeing a block does nothing.
  */
 void mm_free(void *ptr) {
+    size_t size = GET_SIZE(HDRP(ptr));
+
+    /* 할당 비트를 해제하여 블록을 사용 가능한 빈 블록으로 표시 */
+    PUT(HDRP(ptr), PACK(size, 0));
+    PUT(FTRP(ptr), PACK(size, 0));
+
+    /* 빈 블록을 병합하여 연속된 빈 블록을 만듦 */
+    coalesce(ptr);
 }
+
 
 /*
  * mm_realloc - Implemented simply in terms of mm_malloc and mm_free
