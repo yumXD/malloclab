@@ -64,8 +64,8 @@ team_t team = {
 #define NEXT_BLKP(bp)   (((char *)(bp) + GET_SIZE((char *)(bp) - WSIZE)))
 #define PREV_BLKP(bp)   (((char *)(bp) - GET_SIZE((char *)(bp) - DSIZE)))
 
-#define GET_FREE_SUCC(bp)  (*(void**)(bp + WSIZE))
-#define GET_FREE_PRED(bp)  (*(void**)(bp))
+#define FREE_SUCC(bp)  (*(void**)(bp + WSIZE))
+#define FREE_PRED(bp)  (*(void**)(bp))
 
 static char *heap_listp = NULL;
 static char *free_listp = NULL;
@@ -194,7 +194,7 @@ static void *find_fit(size_t asize) {
     void *bp;
 
     /* 가용 블록 리스트를 순회하며 요청된 크기보다 크거나 같은 가용 블록을 찾습니다. */
-    for (bp = free_listp; GET_ALLOC(HDRP(bp)) == 0; bp = GET_FREE_SUCC(bp)) {
+    for (bp = free_listp; GET_ALLOC(HDRP(bp)) == 0; bp = FREE_SUCC(bp)) {
         if (asize <= GET_SIZE(HDRP(bp))) {
             return bp; /* 찾은 가용 블록의 포인터를 반환합니다. */
         }
@@ -225,7 +225,16 @@ static void place(void *bp, size_t asize) {
 }
 
 static void removeBlock(void *bp) {
-
+    /* 주어진 블록이 리스트의 맨 앞에 있는 경우 */
+    if (bp == free_listp) {
+        FREE_PRED(FREE_SUCC(bp)) = NULL; /* 리스트의 헤더를 업데이트하여 첫 번째 블록을 변경 */
+        free_listp = FREE_SUCC(bp);
+    } else {
+        /* 주어진 블록이 리스트의 맨 앞에 있지 않은 경우 */
+        /* 주어진 블록의 이전 블록과 다음 블록을 연결하여 리스트에서 제거 */
+        FREE_SUCC(FREE_PRED(bp)) = FREE_SUCC(bp);
+        FREE_PRED(FREE_SUCC(bp)) = FREE_PRED(bp);
+    }
 }
 
 static void putFreeBlock(void *bp) {
