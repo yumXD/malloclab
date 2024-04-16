@@ -238,5 +238,8 @@ static void removeBlock(void *bp) {
 }
 
 static void putFreeBlock(void *bp) {
-
+    FREE_SUCC(bp) = free_listp; /* 새로운 가용 블록의 다음 포인터를 기존의 리스트의 첫 번째 블록을 가리킴 */
+    FREE_PRED(bp) = NULL; /* 새로운 가용 블록의 이전 포인터를 NULL로 설정 */
+    FREE_PRED(free_listp) = bp; /* 기존의 리스트의 첫 번째 블록의 이전 포인터를 새로운 가용 블록을 가리킴 */
+    free_listp = bp; /* 리스트의 헤더를 새로운 가용 블록으로 업데이트 */
 }
