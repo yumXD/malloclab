@@ -196,10 +196,39 @@ static void *extend_heap(size_t words) {
     return coalesce(bp);
 }
 
-
+/* 주어진 블록과 그 다음 블록이 가용 상태일 때 이를 병합 */
 static void *coalesce(void *bp) {
-    return 0;
+    size_t prev_alloc = GET_ALLOC(FTRP(PREV_BLKP(bp)));
+    size_t next_alloc = GET_ALLOC(HDRP(NEXT_BLKP(bp)));
+    size_t size = GET_SIZE(HDRP(bp));
+
+    if (prev_alloc && next_alloc) {            /* Case 1 */
+        putFreeBlock(bp);
+        return bp;
+    } else if (prev_alloc && !next_alloc) {    /* Case 2 */
+        size += GET_SIZE(HDRP(NEXT_BLKP(bp)));
+        removeBlock(NEXT_BLKP(bp));           // 다음 블록을 가용 블록 리스트에서 제거합니다.
+        PUT(HDRP(bp), PACK(size, 0));         // 병합된 블록의 헤더 설정
+        PUT(FTRP(bp), PACK(size, 0));         // 병합된 블록의 푸터 설정
+    } else if (!prev_alloc && next_alloc) {    /* Case 3 */
+        size += GET_SIZE(HDRP(PREV_BLKP(bp)));
+        bp = PREV_BLKP(bp);
+        removeBlock(bp);                      // 이전 블록을 가용 블록 리스트에서 제거합니다.
+        PUT(HDRP(bp), PACK(size, 0));         // 병합된 블록의 헤더 설정
+        PUT(FTRP(bp), PACK(size, 0));         // 병합된 블록의 푸터 설정
+    } else {                                   /* Case 4 */
+        size += GET_SIZE(HDRP(PREV_BLKP(bp))) +
+                GET_SIZE(FTRP(NEXT_BLKP(bp)));
+        removeBlock(NEXT_BLKP(bp));           // 다음 블록을 가용 블록 리스트에서 제거합니다.
+        bp = PREV_BLKP(bp);
+        removeBlock(bp);                      // 이전 블록을 가용 블록 리스트에서 제거합니다.
+        PUT(HDRP(bp), PACK(size, 0));         // 병합된 블록의 헤더 설정
+        PUT(FTRP(bp), PACK(size, 0));         // 병합된 블록의 푸터 설정
+    }
+    putFreeBlock(bp);                          // 병합된 블록을 가용 블록 리스트의 맨 앞에 추가합니다.
+    return bp;
 }
+
 
 /* 요청된 크기에 맞는 가용 블록을 찾기 */
 static void *find_fit(size_t asize) {
