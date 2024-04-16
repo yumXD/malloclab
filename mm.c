@@ -75,6 +75,10 @@ static void *extend_heap(size_t words);
 
 static void *coalesce(void *bp);
 
+static void *find_fit(size_t asize);
+
+static void place(void *bp, size_t asize);
+
 /* 
  * mm_init - initialize the malloc package.
  */
@@ -106,15 +110,34 @@ int mm_init(void) {
  *     Always allocate a block whose size is a multiple of the alignment.
  */
 void *mm_malloc(size_t size) {
-    int newsize = ALIGN(size + SIZE_T_SIZE);
-    void *p = mem_sbrk(newsize);
-    if (p == (void *) -1)
+    size_t asize;      /* 조정된 블록 크기 */
+    size_t extendsize; /* 적합한 블록을 찾지 못했을 때 확장할 힙의 크기 */
+    char *bp;
+
+    /* 불필요한 요청 무시 */
+    if (size == 0)
         return NULL;
-    else {
-        *(size_t *) p = size;
-        return (void *) ((char *) p + SIZE_T_SIZE);
+
+    /* 오버헤드와 정렬 요구 사항을 포함한 블록 크기 조정 */
+    if (size <= DSIZE)
+        asize = 2 * DSIZE;
+    else
+        asize = DSIZE * ((size + (DSIZE) + (DSIZE - 1)) / DSIZE);
+
+    /* 빈 블록을 검색하여 적합한 블록을 찾음 */
+    if ((bp = find_fit(asize)) != NULL) {
+        place(bp, asize);
+        return bp;
     }
+
+    /* 적합한 블록을 찾지 못했을 경우, 힙을 확장하여 새로운 블록 할당 */
+    extendsize = MAX(asize, CHUNKSIZE);
+    if ((bp = extend_heap(extendsize / WSIZE)) == NULL)
+        return NULL;
+    place(bp, asize);
+    return bp;
 }
+
 
 /*
  * mm_free - Freeing a block does nothing.
@@ -162,4 +185,12 @@ static void *extend_heap(size_t words) {
 
 static void *coalesce(void *bp) {
     return 0;
+}
+
+static void *find_fit(size_t asize) {
+    return 0;
+}
+
+static void place(void *bp, size_t asize) {
+    
 }
